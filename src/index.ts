@@ -12,6 +12,7 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
+    console.log(await request.json());
     return new Response("Hello World!");
   },
 };
