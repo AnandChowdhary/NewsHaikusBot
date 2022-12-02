@@ -1,5 +1,7 @@
 import { Configuration, OpenAIApi } from "openai";
-import { TwitterApi } from "twitter-api-v2";
+import OAuth from "oauth-1.0a";
+import { HmacSHA1, enc } from "crypto-js";
+import type { GETTweetsIdResponse, POSTTweetsResponse } from "twitter-types";
 
 export interface Env {
   TWITTER_API_KEY: string;
@@ -12,15 +14,25 @@ export interface Env {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const oauth = new OAuth({
+      consumer: {
+        key: env.TWITTER_API_KEY,
+        secret: env.TWITTER_API_KEY_SECRET,
+      },
+      signature_method: "HMAC-SHA1",
+      hash_function(baseString, key) {
+        return HmacSHA1(baseString, key).toString(enc.Base64);
+      },
+    });
+
+    const oauthToken = {
+      key: env.TWITTER_ACCESS_TOKEN,
+      secret: env.TWITTER_ACCESS_TOKEN_SECRET,
+    };
+
     const { createCompletion } = new OpenAIApi(
       new Configuration({ apiKey: env.OPENAI_API_KEY })
     );
-    const twitterClient = new TwitterApi({
-      appKey: env.TWITTER_API_KEY,
-      appSecret: env.TWITTER_API_KEY_SECRET,
-      accessToken: env.TWITTER_ACCESS_TOKEN,
-      accessSecret: env.TWITTER_ACCESS_TOKEN_SECRET,
-    }).readWrite;
 
     const blob = await request.blob();
     const text = await blob.text();
@@ -33,15 +45,22 @@ export default {
       return new Response("Invalid URL", { status: 400 });
     }
 
-    const tweet = await twitterClient.v2.singleTweet(
-      url.pathname.split("/status/")[1]
-    );
-    if (tweet.errors?.length) {
-      console.log("ERROR", JSON.stringify(tweet.errors));
-      return new Response("Invalid tweet", { status: 400 });
-    }
+    const findTweetRequestData = {
+      url: `https://api.twitter.com/2/tweets/${
+        url.pathname.split("/status/")[1]
+      }`,
+      method: "GET",
+    };
+    const findTweetResponse = await fetch(findTweetRequestData.url, {
+      method: findTweetRequestData.method,
+      headers: {
+        ...oauth.toHeader(oauth.authorize(findTweetRequestData, oauthToken)),
+        "Content-Type": "application/json",
+      },
+    });
+    const findTweetJson = await findTweetResponse.json<GETTweetsIdResponse>();
 
-    const originalTweet = tweet.data.text.replace(
+    const originalTweet = findTweetJson.data.text.replace(
       /(?:https?|ftp):\/\/[\n\S]+/g,
       ""
     );
@@ -63,14 +82,32 @@ export default {
       top_p: 1,
       prompt,
     });
-    const status = completion.data.choices[0]?.text;
-    if (!status) {
+    const result = completion.data.choices[0]?.text;
+    if (!result) {
       console.log("ERROR", JSON.stringify(completion.data));
-      return new Response("No status", { status: 400 });
+      return new Response("No result from OpenAI", { status: 400 });
     }
 
-    const result = await twitterClient.v1.quote(status, tweet.data.id);
-    console.log(status, tweet.data.id, result.id);
-    return new Response(`OK - ${result.id}`);
+    const postTweetRequestData = {
+      url: `https://api.twitter.com/2/tweets/${
+        url.pathname.split("/status/")[1]
+      }`,
+      method: "POST",
+      data: {
+        text: result,
+        quote_tweet_id: findTweetJson.data.id,
+      },
+    };
+    const postTweetResponse = await fetch(postTweetRequestData.url, {
+      method: postTweetRequestData.method,
+      headers: {
+        ...oauth.toHeader(oauth.authorize(postTweetRequestData, oauthToken)),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(postTweetRequestData.data),
+    });
+    const postTweetJson = await postTweetResponse.json<POSTTweetsResponse>();
+
+    return new Response(`OK - ${postTweetJson.data.id}`);
   },
 };
