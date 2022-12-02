@@ -1,6 +1,24 @@
 {
   "name": "news-haikus-bot",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnandChowdhary/NewsHaikusBot.git"
+  },
+  "keywords": [
+    "twitter-bot",
+    "typescript",
+    "twitter",
+    "twitter-api",
+    "openai",
+    "gpt-3"
+  ],
+  "author": "Anand Chowdhary <mail@anandchowdhary.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AnandChowdhary/NewsHaikusBot/issues"
+  },
+  "homepage": "https://twitter.com/NewsHaikusBot",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20221111.1",
     "@types/crypto-js": "^4.1.1",
@@ -14,7 +32,6 @@
   "dependencies": {
     "crypto-js": "^4.1.1",
     "oauth-1.0a": "^2.2.6",
-    "openai": "^3.1.0",
     "twitter-types": "^0.26.0"
   }
 }
