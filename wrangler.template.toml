@@ -1,6 +1,7 @@
 name = "news-haikus-bot"
 main = "src/index.ts"
 compatibility_date = "2022-12-02"
+node_compat = true
 
 [vars]
 TWITTER_ACCESS_TOKEN = "Your Twitter access token"
