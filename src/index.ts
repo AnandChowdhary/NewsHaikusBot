@@ -1,4 +1,3 @@
-import { Configuration, OpenAIApi } from "openai";
 import OAuth from "oauth-1.0a";
 import { HmacSHA1, enc } from "crypto-js";
 import type { GETTweetsIdResponse, POSTTweetsResponse } from "twitter-types";
@@ -9,6 +8,8 @@ export interface Env {
   TWITTER_BEARER_TOKEN: string;
   TWITTER_ACCESS_TOKEN: string;
   TWITTER_ACCESS_TOKEN_SECRET: string;
+  TWITTER_CLIENT_ID: string;
+  TWITTER_CLIENT_SECRET: string;
   OPENAI_API_KEY: string;
 }
 
@@ -29,10 +30,6 @@ export default {
       key: env.TWITTER_ACCESS_TOKEN,
       secret: env.TWITTER_ACCESS_TOKEN_SECRET,
     };
-
-    const { createCompletion } = new OpenAIApi(
-      new Configuration({ apiKey: env.OPENAI_API_KEY })
-    );
 
     const blob = await request.blob();
     const text = await blob.text();
@@ -64,34 +61,45 @@ export default {
       /(?:https?|ftp):\/\/[\n\S]+/g,
       ""
     );
-    console.log("Got tweet body", originalTweet);
     if (originalTweet.length < 150) {
       console.log("ERROR", "Tweet too short", originalTweet);
       return new Response("Tweet too short");
     }
 
     const prompt = `Write a haiku for the news story: ${originalTweet}`;
-    const completion = await createCompletion({
-      model: "text-davinci-002",
-      best_of: 1,
-      echo: false,
-      frequency_penalty: 0,
-      max_tokens: 256,
-      presence_penalty: 0,
-      temperature: 0.7,
-      top_p: 1,
-      prompt,
-    });
-    const result = completion.data.choices[0]?.text;
+    const openApiResponse = await fetch(
+      "https://api.openai.com/v1/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "text-davinci-003",
+          best_of: 1,
+          echo: false,
+          frequency_penalty: 0,
+          max_tokens: 256,
+          presence_penalty: 0,
+          temperature: 0.7,
+          top_p: 1,
+          prompt,
+        }),
+      }
+    );
+    const completion = await openApiResponse.json<{
+      id: string;
+      choices: { text: string }[];
+    }>();
+    const result = completion.choices[0]?.text;
     if (!result) {
-      console.log("ERROR", JSON.stringify(completion.data));
+      console.log("ERROR", JSON.stringify(completion));
       return new Response("No result from OpenAI", { status: 400 });
     }
 
     const postTweetRequestData = {
-      url: `https://api.twitter.com/2/tweets/${
-        url.pathname.split("/status/")[1]
-      }`,
+      url: "https://api.twitter.com/2/tweets",
       method: "POST",
       data: {
         text: result,
@@ -106,8 +114,13 @@ export default {
       },
       body: JSON.stringify(postTweetRequestData.data),
     });
-    const postTweetJson = await postTweetResponse.json<POSTTweetsResponse>();
+    if (!postTweetResponse.ok) {
+      console.log("ERROR", postTweetResponse.statusText);
+      console.log("ERROR", await postTweetResponse.json());
+      return new Response("Error posting tweet", { status: 400 });
+    }
 
+    const postTweetJson = await postTweetResponse.json<POSTTweetsResponse>();
     return new Response(`OK - ${postTweetJson.data.id}`);
   },
 };
