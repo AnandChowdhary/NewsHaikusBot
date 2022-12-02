@@ -99,12 +99,12 @@ export default {
     }
 
     const postTweetRequestData = {
-      url: "https://api.twitter.com/2/tweets",
+      url: `https://api.twitter.com/1.1/statuses/update.json?status=${encodeURIComponent(
+        result
+      )}&attachment_url=${encodeURIComponent(
+        `https://twitter.com/${findTweetJson.data.author_id}/status/${findTweetJson.data.id}`
+      )}`,
       method: "POST",
-      data: {
-        text: result,
-        quote_tweet_id: findTweetJson.data.id,
-      },
     };
     const postTweetResponse = await fetch(postTweetRequestData.url, {
       method: postTweetRequestData.method,
@@ -112,15 +112,16 @@ export default {
         ...oauth.toHeader(oauth.authorize(postTweetRequestData, oauthToken)),
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(postTweetRequestData.data),
     });
     if (!postTweetResponse.ok) {
       console.log("ERROR", postTweetResponse.statusText);
-      console.log("ERROR", await postTweetResponse.json());
+      console.log("ERROR", JSON.stringify(await postTweetResponse.json()));
       return new Response("Error posting tweet", { status: 400 });
     }
 
-    const postTweetJson = await postTweetResponse.json<POSTTweetsResponse>();
-    return new Response(`OK - ${postTweetJson.data.id}`);
+    const postTweetJson = await postTweetResponse.json<
+      POSTTweetsResponse["data"]
+    >();
+    return new Response(`OK - ${postTweetJson.id}`);
   },
 };
