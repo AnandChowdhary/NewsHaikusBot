@@ -61,7 +61,7 @@ export default {
       /(?:https?|ftp):\/\/[\n\S]+/g,
       ""
     );
-    if (originalTweet.length < 150) {
+    if (originalTweet.length < 150 && Math.random() < 0.3) {
       console.log("ERROR", "Tweet too short", originalTweet);
       return new Response("Tweet too short");
     }
