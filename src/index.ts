@@ -61,9 +61,13 @@ export default {
       /(?:https?|ftp):\/\/[\n\S]+/g,
       ""
     );
-    if (originalTweet.length < 150 && Math.random() < 0.3) {
+    if (originalTweet.length < 150) {
       console.log("ERROR", "Tweet too short", originalTweet);
       return new Response("Tweet too short");
+    }
+
+    if (Math.random() > 0.2) {
+      return new Response("Randomly failed");
     }
 
     const prompt = `Write a haiku for the news story: ${originalTweet}`;
