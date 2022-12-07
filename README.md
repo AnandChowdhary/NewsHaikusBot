@@ -4,9 +4,7 @@ A Twitter bot that generates haikus from news stories using OpenAI's GPT-3.
 
 **Follow:** https://twitter.com/NewsHaikusBot
 
-## 📰 Example
-
-<img width="529" alt="Search for a solution, Natural gas too expensive, Heat pumps, be our savior" src="https://user-images.githubusercontent.com/2841780/205292131-b7ab0309-bbb0-40bd-a946-7dd06516ea6c.png">
+![Search for a solution, Natural gas too expensive, Heat pumps, be our savior](https://user-images.githubusercontent.com/2841780/206131528-19209372-53c0-4843-9d8e-8704f6fe0013.png)
 
 ## 🤞 How it works
 
