@@ -23,14 +23,14 @@
     "@cloudflare/workers-types": "^4.20221111.1",
     "@types/crypto-js": "^4.1.1",
     "typescript": "^4.9.3",
-    "wrangler": "2.5.0"
+    "wrangler": "2.20.2"
   },
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish"
   },
   "dependencies": {
-    "crypto-js": "^4.1.1",
+    "crypto-js": "^4.2.0",
     "oauth-1.0a": "^2.2.6",
     "twitter-types": "^0.26.0"
   }
